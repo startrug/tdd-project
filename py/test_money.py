@@ -32,22 +32,34 @@ class TestMoney(unittest.TestCase):
     self.assertEqual(fifteen_dollars, portfolio.evaluate("USD"))
 
   def testAdditionOfDollarsAndEuros(self):
-    fiveDollars = Money(5, "USD")
-    tenEuros = Money(10, "EUR")
+    five_dollars = Money(5, "USD")
+    ten_euros = Money(10, "EUR")
     portfolio = Portfolio()
-    portfolio.add(fiveDollars, tenEuros)
-    expectedValue = Money(16, "USD")
-    actualValue = portfolio.evaluate("USD")
-    self.assertEqual(expectedValue, actualValue, "%s != %s" % (expectedValue, actualValue))
+    portfolio.add(five_dollars, ten_euros)
+    expected_value = Money(16, "USD")
+    actual_value = portfolio.evaluate("USD")
+    self.assertEqual(expected_value, actual_value, "%s != %s" % (expected_value, actual_value))
 
   def testAdditionOfDollarsAndWons(self):
-    oneDollar = Money(1, "USD")
-    elevenHundredWon = Money(1100, "KRW")
+    one_dollar = Money(1, "USD")
+    eleven_hundred_won = Money(1100, "KRW")
     portfolio = Portfolio()
-    portfolio.add(oneDollar, elevenHundredWon)
-    expectedValue = Money(2200, "KRW")
-    actualValue = portfolio.evaluate("KRW")
-    self.assertEqual(expectedValue, actualValue, "%s != %s" % (expectedValue, actualValue))
+    portfolio.add(one_dollar, eleven_hundred_won)
+    expected_value = Money(2200, "KRW")
+    actual_value = portfolio.evaluate("KRW")
+    self.assertEqual(expected_value, actual_value, "%s != %s" % (expected_value, actual_value))
+
+  def testAdditionWithMultipleMissingExchangeRates(self):
+    one_dollar = Money(1, "USD")
+    one_euro = Money(1, "EUR")
+    one_won = Money(1, "KRW")
+    portfolio = Portfolio()
+    portfolio.add(one_dollar, one_euro, one_won)
+    with self.assertRaisesRegex(
+      Exception,
+      "Missing exchange rate\(s\):\[USD\->Kalganid,EUR->Kalganid,KRW->Kalganid]",
+    ):
+      portfolio.evaluate("Kalganid")
 
 if __name__ == '__main__':
     unittest.main()
