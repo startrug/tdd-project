@@ -1,27 +1,35 @@
 package main
 
 import (
+	"reflect"
 	s "tdd/stocks"
 	"testing"
 )
+
+var bank s.Bank
+
+func init() {
+    bank = s.NewBank()
+    bank.AddExchangeRate("EUR", "USD", 1.1)
+    bank.AddExchangeRate("USD", "KRW", 1100)
+}
 
 func TestMultiplication(t *testing.T) {
 	tenEuros := s.NewMoney(10, "EUR")
 	twentyEuros := tenEuros.Times(2)
 	expectedResult := s.NewMoney(20, "EUR")
 
-	assertEqual(expectedResult, twentyEuros, t)
+	assertEqual(t, expectedResult, twentyEuros)
 }
 func TestDivision(t *testing.T) {
 	originalMoney := s.NewMoney(4002, "KRW")
 	actualMoneyAfterDivision := originalMoney.Divide(4)
 	expectedMoneyAfterDivision := s.NewMoney(1000.5, "KRW")
-	assertEqual(expectedMoneyAfterDivision, actualMoneyAfterDivision, t)
+	assertEqual(t, expectedMoneyAfterDivision, actualMoneyAfterDivision)
 }
 
 func TestAddition(t *testing.T) {
 	var portfolio s.Portfolio
-	var portfolioInDollars s.Money
 
 	fiveDollars := s.NewMoney(5, "USD")
 	tenDollars := s.NewMoney(10, "USD")
@@ -29,14 +37,14 @@ func TestAddition(t *testing.T) {
 
 	portfolio = portfolio.Add(fiveDollars)
 	portfolio = portfolio.Add(tenDollars)
-	portfolioInDollars, _ = portfolio.Evaluate("USD")
+	portfolioInDollars, err := portfolio.Evaluate(bank, "USD")
 
-	assertEqual(fifteenDollars, portfolioInDollars, t)
+	assertNil(t, err)
+    assertEqual(t, fifteenDollars, *portfolioInDollars)
 }
 
 func TestAdditionOfDollarsAndEuros(t *testing.T) {
 	var portfolio s.Portfolio
-	var portfolioInDollars s.Money
 
 	fiveDollars := s.NewMoney(5, "USD")
 	tenDollars := s.NewMoney(10, "EUR")
@@ -44,9 +52,10 @@ func TestAdditionOfDollarsAndEuros(t *testing.T) {
 
 	portfolio = portfolio.Add(fiveDollars)
 	portfolio = portfolio.Add(tenDollars)
-	portfolioInDollars, _ = portfolio.Evaluate("USD")
+	portfolioInDollars, err := portfolio.Evaluate(bank, "USD")
 
-	assertEqual(fifteenDollars, portfolioInDollars, t)
+	assertNil(t, err)
+    assertEqual(t, fifteenDollars, *portfolioInDollars)
 }
 
 func TestAdditionOfDollarsAndWons(t *testing.T) {
@@ -59,9 +68,10 @@ func TestAdditionOfDollarsAndWons(t *testing.T) {
     portfolio = portfolio.Add(elevenHundredWon)
 
     expectedValue := s.NewMoney(2200, "KRW")
-    actualValue, _ := portfolio.Evaluate("KRW")
+    actualValue, err := portfolio.Evaluate(bank, "KRW")
 
-    assertEqual(expectedValue, actualValue, t)
+    assertNil(t, err)
+    assertEqual(t, expectedValue, *actualValue)
 }
 
 func TestAdditionWithMultipleMissingExchangeRates(t *testing.T) {
@@ -75,16 +85,40 @@ func TestAdditionWithMultipleMissingExchangeRates(t *testing.T) {
     portfolio = portfolio.Add(oneEuro)
     portfolio = portfolio.Add(oneWon)
 
-    expectedErrorMessage := "Missing exchange rate(s):[USD->Kalganid,EUR->Kalganid,KRW->Kalganid,]"
-    _, actualError := portfolio.Evaluate("Kalganid")
+    expectedErrorMessage :=
+        "Missing exchange rate(s):USD->Kalganid, EUR->Kalganid, KRW->Kalganid"
+    value, actualError := portfolio.Evaluate(bank, "Kalganid")
 
-    if expectedErrorMessage != actualError.Error() {
-        t.Errorf("Expected %s Got %s",
-            expectedErrorMessage, actualError.Error())
+    assertNil(t, value)
+    assertEqual(t, expectedErrorMessage, actualError.Error())
+}
+
+func TestConversion(t *testing.T) {
+    bank := s.NewBank()
+    bank.AddExchangeRate("EUR", "USD", 1.2)
+    tenEuros := s.NewMoney(10, "EUR")
+    actualConvertedMoney, err := bank.Convert(tenEuros, "USD")
+    assertNil(t, err)
+    assertEqual(t, s.NewMoney(12, "USD"), *actualConvertedMoney)
+}
+
+func TestConversionWithMissingExchangeRate(t *testing.T) {
+    bank := s.NewBank()
+    tenEuros := s.NewMoney(10, "EUR")
+    actualConvertedMoney, err := bank.Convert(tenEuros, "Kalganid")
+    if actualConvertedMoney != nil {
+        assertNil(t, actualConvertedMoney)
+    }
+    assertEqual(t, "EUR->Kalganid", err.Error())
+}
+
+func assertNil(t *testing.T, actual interface{}) {
+    if actual != nil && !reflect.ValueOf(actual).IsNil() {
+        t.Errorf("Expected error to be nil, found: [%s]", actual)
     }
 }
 
-func assertEqual(expected s.Money, actual s.Money, t *testing.T) {
+func assertEqual(t *testing.T, expected interface{}, actual interface{}) {
 	if expected != actual {
 		t.Errorf("Expected %+v Got %+v",
 			expected, actual)
