@@ -14,18 +14,18 @@ func (b Bank) AddExchangeRate(currencyFrom string, currencyTo string,
 
 func (b Bank) Convert(money Money, currencyTo string) (convertedMoney *Money,
 	err error) {
-var result Money
-if money.currency == currencyTo {
-	result = NewMoney(money.amount, money.currency)
-	return &result, nil
-}
-key := money.currency + "->" + currencyTo
-rate, ok := b.exchangeRates[key]
-if ok {
-	result = NewMoney(money.amount*rate, currencyTo)
-	return &result, nil
-}
-return nil, errors.New(key)
+	var result Money
+	if money.currency == currencyTo {
+		result = NewMoney(money.amount, money.currency)
+		return &result, nil
+	}
+	key := money.currency + "->" + currencyTo
+	rate, ok := b.exchangeRates[key]
+	if ok {
+		result = NewMoney(money.amount*rate, currencyTo)
+		return &result, nil
+	}
+	return nil, errors.New(key)
 }
 
 func NewBank() Bank {
