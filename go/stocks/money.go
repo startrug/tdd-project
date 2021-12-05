@@ -6,7 +6,7 @@ type Money struct {
 }
 
 func NewMoney(amount float64, currency string) Money {
-    return Money{amount, currency}
+	return Money{amount, currency}
 }
 
 func (m Money) Times(multiplier int) Money {
