@@ -11,26 +11,17 @@ class Portfolio:
   def add(self, *moneys):
         self.moneys.extend(moneys)
 
-  def evaluate(self, currency):
+  def evaluate(self, bank, currency):
         total = 0.0
         failures = []
         for m in self.moneys:
             try:
-                total += self.__convert(m, currency)
-            except KeyError as ke:
-                failures.append(ke)
+                total += bank.convert(m, currency).amount
+            except Exception as ex:
+                failures.append(ex)
 
         if len(failures) == 0:
             return Money(total, currency)
 
-        failure_message = ",".join(f.args[0] for f in failures)
-        raise Exception("Missing exchange rate(s):[" + failure_message + "]")
-
-  def __convert(self, a_money, a_currency):
-      exchange_rates = {'EUR->USD': 1.1, 'USD->KRW': 1100}
-
-      if a_money.currency == a_currency:
-            return a_money.amount
-      else:
-            key = a_money.currency + '->' + a_currency
-            return a_money.amount * exchange_rates[key]
+        failureMessage = ",".join(f.args[0] for f in failures)
+        raise Exception("Missing exchange rate(s):[" + failureMessage + "]")
