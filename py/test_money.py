@@ -1,9 +1,15 @@
 import unittest
 from money import Money
 from portfolio import Portfolio
+from bank import Bank
 
 
 class TestMoney(unittest.TestCase):
+  def setUp(self):
+    self.bank = Bank()
+    self.bank.addExchangeRate("EUR", "USD", 1.1)
+    self.bank.addExchangeRate("USD", "KRW", 1100)
+
   def testMultiplication(self):
     fiver = Money(5, "USD")
     tenner = fiver.times(2)
@@ -29,7 +35,7 @@ class TestMoney(unittest.TestCase):
     fifteen_dollars = Money(15, "USD")
     portfolio = Portfolio()
     portfolio.add(five_dollars, ten_dollars)
-    self.assertEqual(fifteen_dollars, portfolio.evaluate("USD"))
+    self.assertEqual(fifteen_dollars, portfolio.evaluate(self.bank, "USD"))
 
   def testAdditionOfDollarsAndEuros(self):
     five_dollars = Money(5, "USD")
@@ -37,7 +43,7 @@ class TestMoney(unittest.TestCase):
     portfolio = Portfolio()
     portfolio.add(five_dollars, ten_euros)
     expected_value = Money(16, "USD")
-    actual_value = portfolio.evaluate("USD")
+    actual_value = portfolio.evaluate(self.bank, "USD")
     self.assertEqual(expected_value, actual_value, "%s != %s" % (expected_value, actual_value))
 
   def testAdditionOfDollarsAndWons(self):
@@ -46,7 +52,7 @@ class TestMoney(unittest.TestCase):
     portfolio = Portfolio()
     portfolio.add(one_dollar, eleven_hundred_won)
     expected_value = Money(2200, "KRW")
-    actual_value = portfolio.evaluate("KRW")
+    actual_value = portfolio.evaluate(self.bank, "KRW")
     self.assertEqual(expected_value, actual_value, "%s != %s" % (expected_value, actual_value))
 
   def testAdditionWithMultipleMissingExchangeRates(self):
@@ -59,7 +65,19 @@ class TestMoney(unittest.TestCase):
       Exception,
       "Missing exchange rate\(s\):\[USD\->Kalganid,EUR->Kalganid,KRW->Kalganid]",
     ):
-      portfolio.evaluate("Kalganid")
+      portfolio.evaluate(self.bank, "Kalganid")
+
+  def testConversion(self):
+    bank = Bank()
+    bank.addExchangeRate("EUR", "USD", 1.1)
+    ten_euros = Money(10, "EUR")
+    self.assertEqual(bank.convert(ten_euros, "USD"), Money(11, "USD"))
+
+  def testConversionWithMissingExchangeRate(self):
+    bank = Bank()
+    ten_euros = Money(10, "EUR")
+    with self.assertRaisesRegex(Exception, "EUR->Kalganid"):
+        bank.convert(ten_euros, "Kalganid")
 
 if __name__ == '__main__':
     unittest.main()
